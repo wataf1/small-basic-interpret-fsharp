@@ -5,6 +5,8 @@ VisualStudioVersion = 15.0.27130.2020
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "FParser", "FParser\FParser.fsproj", "{A5CF129A-8DD0-46B9-A3BF-61BC83AB0A4A}"
 EndProject
+Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Parserator", "Parserator\Parserator.fsproj", "{762A586B-0621-4569-893D-8CF8767377FA}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,6 +17,10 @@ Global
 		{A5CF129A-8DD0-46B9-A3BF-61BC83AB0A4A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A5CF129A-8DD0-46B9-A3BF-61BC83AB0A4A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A5CF129A-8DD0-46B9-A3BF-61BC83AB0A4A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{762A586B-0621-4569-893D-8CF8767377FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{762A586B-0621-4569-893D-8CF8767377FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{762A586B-0621-4569-893D-8CF8767377FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{762A586B-0621-4569-893D-8CF8767377FA}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

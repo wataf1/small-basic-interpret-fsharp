@@ -5,6 +5,7 @@
 #I "c:\\Users\\jhuber1\\documents\\visual studio 2017\\Projects\\FParser\\packages\\SmallBasicLib.1.2\\lib"
 #r "SmallBasicLibrary.dll"
 #I "c:\\Users\\jhuber1\\documents\\visual studio 2017\\Projects\\FParser\\FParser"
+#load "Print.fs"
 #load "Ast.fs"
 #load "Parser.fs"
 #load "Compiler.fs"
@@ -13,6 +14,7 @@
 open FParsec
 open System
 open System.Reflection
+open Print
 open Ast
 open Parser
 open Compiler
