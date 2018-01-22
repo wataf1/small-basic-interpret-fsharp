@@ -1,0 +1,11 @@
+﻿Sub Echo(s)
+  TextWindow.WriteLine(s)
+EndSub
+
+For A = 1 To 100 
+  Echo("Loop ")
+  Echo(A)
+  Square = A * A
+  Echo("Square =")
+  Echo(Square)
+EndFor

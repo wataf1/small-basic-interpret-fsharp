@@ -1,0 +1,39 @@
+﻿Sub Modulus
+  TextWindow.WriteLine("Called modulus. Result =") 
+  TextWindow.WriteLine(Result) 
+  Result = Dividend
+  TextWindow.WriteLine("Setting Result to Dividend. Result =") 
+  TextWindow.WriteLine(Result) 
+  TextWindow.WriteLine("Starting while loop (while Result >= Divisor. Result =") 
+  TextWindow.WriteLine(Result) 
+  TextWindow.WriteLine("Divisor =") 
+  TextWindow.WriteLine(Divisor) 
+  While Result >= Divisor
+    Result = Result - Divisor
+	TextWindow.WriteLine("Inside while loop. Result =") 
+	TextWindow.WriteLine(Result) 
+  EndWhile
+  TextWindow.WriteLine("Result = ")
+  TextWindow.WriteLine(Result)
+EndSub
+
+For A = 1 To 100  
+  TextWindow.WriteLine("Starting loop. A =") 
+  TextWindow.WriteLine(A) 
+  Dividend = A
+  Divisor = 3
+  Modulus()
+  Mod3 = Result
+  Divisor = 5
+  Modulus()
+  Mod5 = Result
+  If Mod3 = 0 And Mod5 = 0 Then
+    TextWindow.WriteLine("FizzBuzz")  
+  ElseIf Mod3 = 0 Then
+    TextWindow.WriteLine("Fizz")
+  ElseIf Mod5 = 0 Then
+    TextWindow.WriteLine("Buzz")
+  Else
+    TextWindow.WriteLine(A)        
+  EndIf
+EndFor
