@@ -1,5 +1,6 @@
 ﻿module Compiler
 open Ast
+open FSharp.Core.Printf
 open Microsoft.SmallBasic.Library
 open System
 open System.Reflection
@@ -124,8 +125,10 @@ let emitInstructions (mainIL:ILGenerator) doc
         | x -> il.Emit(OpCodes.Ldarg,x)
     /// Emit expression
     let rec emitExpression (il:ILGenerator) = function
-        | Literal x -> emitLiteral il x
+        | Literal x -> 
+            emitLiteral il x
         | Var name -> 
+            emitPrint il <| sprintf "Emitting Var(%s)" name
             let paramIndex =
                 match methods.TryGetValue(!methodName) with
                 | true, (_,ps) -> ps |> List.tryFindIndex ((=) name)
@@ -176,6 +179,13 @@ let emitInstructions (mainIL:ILGenerator) doc
             il.Emit(OpCodes.Stloc, array.LocalIndex)
             )
         il.Emit(OpCodes.Ldloc, array.LocalIndex)
+    and emitPrint (il:ILGenerator) s =
+        let args = [Literal(Ast.String(s))]
+        emitArgs il args
+        let types = [|for _ in args -> typeof<Primitive>|]
+        let fullTypeName = getLibraryTypeName "TextWindow"
+        let mi = Type.GetType(fullTypeName).GetMethod("WriteLine",types)
+        il.EmitCall(OpCodes.Call, mi, null) |> ignore
     /// Emit expression expr. Get method Primitive.[name] and emit call
     and emitPrimitiveCall (il:ILGenerator) expr name  =
         emitExpression il expr
@@ -211,6 +221,7 @@ let emitInstructions (mainIL:ILGenerator) doc
     /// For each arg, emit expression 
     and emitArgs (il:ILGenerator) args = //args |> List.iter (emitExpression il)
         for arg in args do emitExpression il arg
+    
     /// Emit expression e from (Set(name,e)). Emit load static field of name)
     let emitSet (il:ILGenerator) (Set(name,e)) =
         emitExpression il e
