@@ -41,6 +41,7 @@ type Statement =
     | SExpr of Expr
     | Empty
 
+//https://tomassetti.me/ebnf/#examples
 
 let pid = 
     many1Satisfy2 (fun x -> isLetter x || x = '_') (fun x -> isLetter x || isDigit x || x = '_')
