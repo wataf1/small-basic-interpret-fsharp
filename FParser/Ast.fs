@@ -117,6 +117,12 @@ type Assign = Set of Identifier * Expr
             member this.Formatted() = 
                 match this with
                 | Set(id,e) -> sprintf "Assign %s = %s" id (pfmt e)
+
+type ClassMember =
+    | CMethod of methodname:Identifier*args:string list
+    | CEndMethod
+    | CProperty of Assign
+type ClassDef = ClassDef of Identifier*args:string list
 type Instruction =
     Assign of Assign
     | Deconstruct of Pattern * Expr
@@ -140,6 +146,9 @@ type Instruction =
     | Select of Expr
     | Case of Clause list
     | EndSelect
+    | Class of ClassDef
+    | ClassMember of ClassMember
+    | EndClass
     with interface IPrintable with
             member this.Formatted() = 
                 match this with 
@@ -165,6 +174,9 @@ type Instruction =
                 | Select e -> ""              //of Expr
                 | Case xs -> ""               //of Clause list
                 | EndSelect -> ""
+
+
+    
 type Position = {
     StartLn:int;
     StartCol:int

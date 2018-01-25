@@ -1,0 +1,13 @@
+NUGET
+  remote: https://api.nuget.org/v3/index.json
+    FParsec (1.0.3) - restriction: >= net461
+      FSharp.Core (>= 4.0.0.1) - restriction: >= net40
+    FParsec-Pipes (0.4) - restriction: >= net461
+      FParsec (>= 1.0.2)
+    FSharp.Core (4.0.0.1) - restriction: >= net461
+    SmallBasicLib (1.2) - restriction: >= net461
+    System.ValueTuple (4.3.1) - restriction: >= net461
+GITHUB
+  remote: fsprojects/FSharp.TypeProviders.StarterPack
+    src/ProvidedTypes.fs (b6d5c949e46c34f051e2adf88170e1a2d20cbfd9)
+    src/ProvidedTypes.fsi (b6d5c949e46c34f051e2adf88170e1a2d20cbfd9)

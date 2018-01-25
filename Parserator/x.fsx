@@ -1,9 +1,10 @@
-﻿#I "c:\\Users\\jhuber1\\documents\\visual studio 2017\\Projects\\FParser\\packages\\FParsec.1.0.3\\lib\\net40-client"
-#I "c:\\Users\\jhuber1\\documents\\visual studio 2017\\Projects\\FParser\\packages\\FParsec-Pipes.0.4.0\\lib\\net45"
+﻿#I "c:\\Users\\jhuber1\\documents\\visual studio 2017\\Projects\\FParser\\packages\\FParsec\\lib\\net40-client"
+#I "c:\\Users\\jhuber1\\documents\\visual studio 2017\\Projects\\FParser\\packages\\FParsec-Pipes\\lib\\net45"
 #r "FParsec.dll"
 #r "FParsecCS.dll"
 #r "FParsec-Pipes.dll"
 #I "c:\\Users\\jhuber1\\documents\\visual studio 2017\\Projects\\FParser\\Parserator"
+#load "AST.fs"
 open FParsec
 open FParsec.Pipes
 let ws = spaces

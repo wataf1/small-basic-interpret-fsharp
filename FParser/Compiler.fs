@@ -56,6 +56,46 @@ let generateMethods (typeBuilder:TypeBuilder) (instructions:Instruction array) =
     |> List.map (fun (name,ty,ps) -> name, (generateMethod name ty ps,ps))
     |> dict
 
+let getParamTypes (args:'a list) = 
+    args |> List.map (fun _ ->typeof<Primitive>) |> Array.ofList
+let defineParameters (mi:MethodBuilder) (args:string list) = 
+    args |>List.iteri (fun i x -> mi.DefineParameter(i+1, ParameterAttributes.None, x) |> ignore) 
+    
+
+let generateTypes (typeBuilder:TypeBuilder) (instructions:Instruction array) =
+    let generateType (ClassDef(name,args)) = 
+        let subTypeBuilder = 
+            typeBuilder.DefineNestedType(
+                name,
+                TypeAttributes.Public ||| TypeAttributes.Class)
+        let ci = 
+            subTypeBuilder.DefineConstructor(MethodAttributes.Public, CallingConventions.HasThis, 
+                getParamTypes args)
+        args |> List.iteri (fun i x -> ci.DefineParameter(i+1, ParameterAttributes.None, x) |> ignore)
+        subTypeBuilder
+    let generateMethod (subTypeBuilder:TypeBuilder) name returnType args =
+        let mi =
+            subTypeBuilder.DefineMethod(name,
+                MethodAttributes.Final ||| MethodAttributes.Public,
+                returnType, 
+                getParamTypes args)
+        defineParameters mi args
+        mi
+
+    let generateProperty (subTypeBuilder:TypeBuilder) name returnType =
+        let pi = 
+            subTypeBuilder.DefineField(name, returnType, FieldAttributes.Public)
+        pi
+
+    let getClassInstructions (classDef:Instruction) (instructions:Instruction array) =
+        let isNotEndClass = function
+            | EndClass _ -> false
+            | _ -> true
+        let classInstructions = instructions |> Array.takeWhile isNotEndClass
+        notimpl()
+    notimpl()
+
+
 type ILGenerator with
     /// Emit new Primitive created using 1 parameter constructor of type specified
     member il.EmitNewPrimitive(t:Type) =
@@ -242,11 +282,10 @@ let emitInstructions (mainIL:ILGenerator) doc
             let mi = typeof<Primitive>.GetMethod("SetArrayValue")
             il.EmitCall(OpCodes.Call, mi, null)
         il.Emit(OpCodes.Stsfld, fieldLookup name)
-        //for lastIndex = indices.Length - 1 downto 0 do
-            //il.Emit(OpCodes.Stsfld, fieldLookup name)
-            //for index = 0 to lastIndex - 1 do
-                //emitPrimitiveCall il indices.[index] "GetArrayValue"
-            //emitPrimitiveCall il indices.[lastIndex] "SetArrayValue"
+
+    let emitClassDef (il:ILGenerator) (ClassDef(id,args)) =
+        notimpl()
+
     /// Emit the IL to set [typeName].[name] to expression
     let emitPropertySet (il:ILGenerator) typeName name e =
         emitExpression il e
@@ -454,6 +493,9 @@ let emitInstructions (mainIL:ILGenerator) doc
                 il.MarkLabel(endLabel)
             | None -> ()
             il.Emit(OpCodes.Pop)
+        | Class x -> notimpl()
+        | ClassMember x -> notimpl()
+        | EndClass -> notimpl()
     for (pos,instruction) in program do
         let il = !methodIL
         il.MarkSequencePoint(doc,pos.StartLn,pos.StartCol,pos.EndLn,pos.EndCol)

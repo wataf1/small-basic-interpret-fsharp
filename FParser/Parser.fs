@@ -174,6 +174,9 @@ let pgoto = str_ws1 "Goto" >>. pid |>> Goto
 let pfunction = str_ws1 "Function" >>. pmethod |>> Function
 /// Parse EndFunction
 let pendfunction = str_ws_return "EndFunction" EndFunction
+
+
+
 //Select
 /// Parse Select Case [expr]
 let pselect = str_ws1 "Select" >>. str_ws1 "Case" >>. pexpr |>> Select
@@ -209,6 +212,40 @@ let ppattern =
 do ptupleRef := between_paren (sepBy ppattern (str_ws ",")) |>> Tuple
 /// Parse tuple deconstruct = pipe3 ptuple (str_ws "=") pexpr
 let pdeconstruct = pipe3 ptuple (str_ws "=") pexpr (fun p _ e -> Deconstruct(p,e))
+
+
+
+let pclassdef = 
+    pipe3 (str_ws "Class") pid_ws (opt pparams)
+        (fun _ id pars ->
+            let args = defaultArg pars []
+            ClassDef(id,args) |> Class)
+
+let pcprop =
+    str_ws1 "Public" >>. pset |>> CProperty
+
+let pcmethod = 
+    let method = str_ws1 "Method"
+    let name = pid_ws
+    let args = opt pparams
+    pipe3 method name args (fun _ n a -> 
+        let args = defaultArg a []
+        CMethod(n,args))
+
+let pcendmethod = str_ws_return "EndMethod" CEndMethod
+
+let pclassmember = (attempt pcprop <|> attempt pcmethod <|> attempt pcendmethod) |>> ClassMember
+
+let pendclass = str_ws_return "EndClass" EndClass  
+
+
+    //str_ws1 "Class" >>. pid_ws .>>. opt pparamsx
+    //|>> fun (id,args) -> 
+        //let a = defaultArg args []
+        //ClassDef(id,a)
+    
+
+
 /// Parse Instruction = For|EndFor|While|If|ElseIf|Else|EndIf|Select|Case|EndSelect|Sub|EndSub|Function|EndFunction|PropertySet|
 /// Assign|SetAt|Deconstruct|Action|Label|Goto
 let pinstruct =
@@ -216,7 +253,8 @@ let pinstruct =
         pfor;pendfor
         pwhile;pendwhile
         pif;pelseif;pelse;pendif
-        pselect; pcase; pendselect
+        pselect; pcase; pendselect;
+        pclassdef; pclassmember; pendclass
         psub; pendsub
         pfunction; pendfunction
         ppropertyset; passign; psetat; pdeconstruct

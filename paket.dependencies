@@ -1,0 +1,13 @@
+source \\ussd-prd-isi04\Ste\IPA\NuGet
+source C:\Nuget
+source https://ussd.artifactory.illumina.com/api/nuget/nuget-daste
+source https://ussd.artifactory.illumina.com/api/nuget/nuget-digitalsystems
+source https://api.nuget.org/v3/index.json
+
+nuget FParsec 1.0.3 restriction: >= net461
+nuget FParsec-Pipes 0.4.0 restriction: >= net461
+nuget FSharp.Core 4.0.0.1 restriction: >= net461
+nuget SmallBasicLib 1.2 restriction: >= net461
+nuget System.ValueTuple 4.3.1 restriction: >= net461
+github fsprojects/FSharp.TypeProviders.StarterPack src/ProvidedTypes.fsi
+github fsprojects/FSharp.TypeProviders.StarterPack src/ProvidedTypes.fs

@@ -1,0 +1,5 @@
+FParsec
+FSharp.Core
+System.ValueTuple
+File:ProvidedTypes.fsi
+File:ProvidedTypes.fs

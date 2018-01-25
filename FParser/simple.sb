@@ -2,6 +2,14 @@
   TextWindow.WriteLine(s)
 EndSub
 
+Class Rectange(width, height)
+	Public Width = width
+	Public Height = height
+	Method CalcArea()
+		Area = This.Width*This.Height
+	EndMethod
+EndClass
+
 For A = 1 To 100 
   Echo("Loop ")
   Echo(A)
