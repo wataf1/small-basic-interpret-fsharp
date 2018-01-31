@@ -68,6 +68,7 @@
     <Compile Include="Program.fs" />
     <None Include="App.config" />
     <Content Include="paket.references" />
+    <None Include="inteview.fsx" />
   </ItemGroup>
   <ItemGroup>
     <Reference Include="mscorlib" />

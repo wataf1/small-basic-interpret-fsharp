@@ -49,6 +49,8 @@ and Invoke =
     | Method of string * string * Expr list
     | PropertyGet of string*string
 
+//type Field
+
 type Assign = Set of Identifier * Expr
 
 type Instruction =
@@ -74,6 +76,9 @@ type Instruction =
     | Select of Expr
     | Case of Clause list
     | EndSelect
+    | Field of Identifier*Expr
+    | StartField of Identifier
+    | EndField
 
     
 type Position = {
