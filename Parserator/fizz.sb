@@ -16,21 +16,37 @@ Sub Echo(s)
   TextWindow.WriteLine(s)
 EndSub
 
-' Field Test 
-'	x = x + 1
-' EndField
+Sub Prt(s,v)
+	TextWindow.WriteLine(v+s)
+EndSub
 
-' Field One = 1
 
-For A = 1 To 100 ' Iterate from 1 to 100
-  Select Case (Mod(A,3),Mod(A,5))
-    Case (0,0)
-      Echo("FizzBuzz")
-    Case (0,_)
-      Echo("Fizz")
-    Case (_,0)
-      Echo("Buzz")
-    Case Else
-      Echo(A)
-  EndSelect
+Field One = 0
+
+Field Test
+	Value = One + 1
+EndField
+
+Sub Inc(X)
+	One = One + X
+	Prt("One =", One)
+EndSub
+
+Prt("Test =", Test)
+For I = 1 To 20
+	Inc(1)
 EndFor
+Prt("Test =", Test)
+
+' For A = 1 To 100 ' Iterate from 1 to 100
+'   Select Case (Mod(A,3),Mod(A,5))
+'     Case (0,0)
+'       Echo("FizzBuzz")
+'     Case (0,_)
+'       Echo("Fizz")
+'     Case (_,0)
+'       Echo("Buzz")
+'     Case Else
+'       Echo(A)
+'   EndSelect
+' EndFor

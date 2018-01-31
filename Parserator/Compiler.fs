@@ -6,6 +6,7 @@ open System
 open System.Reflection
 open System.Reflection.Emit
 open System.Collections.Generic
+open System.Runtime.CompilerServices
 
 let inline notimpl() = raise <| NotImplementedException()
 
@@ -37,28 +38,96 @@ type PropertyBuilders = {
     //initBuilder:MethodBuilder
 }
 
+type PropBuilder(instruction:Instruction,typeBuilder:TypeBuilder) =
+    static let cab = new CustomAttributeBuilder(typeof<CompilerGeneratedAttribute>.GetConstructor(Type.EmptyTypes),[||])
+    static let getSetAttr = MethodAttributes.Public ||| MethodAttributes.SpecialName ||| MethodAttributes.HideBySig ||| MethodAttributes.Static
+    let isBacked = match instruction with Field(_,_) -> true | _ -> false
+    let name = match instruction with Field(name,_) -> name | StartField name -> name | x -> failwithf "Cannot get name for instruction %A" x
+    let propBuilder = typeBuilder.DefineProperty(name, PropertyAttributes.HasDefault, typeof<Primitive>, null)
+    let fieldName = sprintf "<%s>k_BackingField" name
+    let getName = sprintf "get_%s" name
+    let setName = sprintf "set_%s" name
+    let fieldBuilder = typeBuilder.DefineField(fieldName, typeof<Primitive>, FieldAttributes.Private ||| FieldAttributes.Static)
+        //if not isBacked then None
+        //else Some <| typeBuilder.DefineField(fieldName, typeof<Primitive>, FieldAttributes.Private ||| FieldAttributes.Static)
+
+    let getGetBuilder() = typeBuilder.DefineMethod(getName, getSetAttr, typeof<Primitive>, Type.EmptyTypes)
+
+    let getBuilder,setBuilder =
+        let bGet() = 
+            let gb = getGetBuilder()
+            gb.SetCustomAttribute(cab)
+            let getIl = gb.GetILGenerator()
+            getIl.Emit(OpCodes.Ldsfld, fieldBuilder)
+            getIl.Emit(OpCodes.Ret)
+            propBuilder.SetGetMethod(gb)
+            gb
+        let bSet() =
+            if not isBacked then failwithf "Cannot emit default set_%s methods, %s is not backed" name name
+            // Emit set_Name method builder
+            let sb = typeBuilder.DefineMethod(setName, getSetAttr, null, [|typeof<Primitive>|])
+            sb.SetCustomAttribute(cab)
+            let setIl = sb.GetILGenerator()
+            setIl.Emit(OpCodes.Ldarg_0);
+            setIl.Emit(OpCodes.Stsfld, fieldBuilder);
+            setIl.Emit(OpCodes.Ret);
+            propBuilder.SetSetMethod(sb)
+            sb
+        if isBacked then
+            bGet(),Some <| bSet()
+        else
+            getGetBuilder(), None
+    member __.Name = name
+    member __.FieldName = fieldName
+    member __.GetName = getName
+    member __.SetName = setName
+    member __.PropBuilder = propBuilder
+    member __.FieldBuilder :FieldBuilder = fieldBuilder
+    member __.GetBuilder = getBuilder
+    member __.SetBuilder = setBuilder
+
+    member __.SetGetSetMethods() =
+        propBuilder.SetGetMethod(getBuilder)
+        match setBuilder with Some sb -> propBuilder.SetSetMethod(sb) | None -> ()
+            
+
+
+    //let fieldBuilder = typeBuilder.DefineField(sprintf "<%s>k_BackingField" name, typeof<Primitive>, FieldAttributes.Private ||| FieldAttributes.Static)
     
+let generateProps (typeBuilder:TypeBuilder) (instructions:Instruction array) =
+    let chooseProp = 
+        function 
+        | Field _ as i -> Some <|new PropBuilder(i,typeBuilder)
+        | StartField _ as i->Some <|new PropBuilder(i,typeBuilder)
+        | _ -> None
+    instructions |> Array.choose chooseProp |> Array.map (fun x -> x.Name,x) |> dict
 
 let generateProperties (typeBuilder:TypeBuilder) (instructions:Instruction array) =
-    let getSetAttr = MethodAttributes.Public ||| MethodAttributes.SpecialName ||| MethodAttributes.HideBySig
-    let generateProperty name = 
-        let pb = typeBuilder.DefineProperty(name, PropertyAttributes.HasDefault, typeof<Primitive>, null)
-        let fb = typeBuilder.DefineField(sprintf "_%s" name, typeof<Primitive>, FieldAttributes.Private ||| FieldAttributes.Static)
+    let cab = new CustomAttributeBuilder(typeof<CompilerGeneratedAttribute>.GetConstructor(Type.EmptyTypes),[||])
+    let getSetAttr = MethodAttributes.Public ||| MethodAttributes.SpecialName ||| MethodAttributes.HideBySig ||| MethodAttributes.Static
+    let emitGet (fb:FieldBuilder) name =
         let gb = typeBuilder.DefineMethod(sprintf "get_%s" name, getSetAttr, typeof<Primitive>, Type.EmptyTypes)
-        let sb = typeBuilder.DefineMethod(sprintf "set_%s" name, getSetAttr, null, [|typeof<Primitive>|])
-        //let ib = typeBuilder.DefineMethod(sprintf "init_%s" name, MethodAttributes.Static ||| MethodAttributes.Public, typeof<Primitive>,[||])
+        gb.SetCustomAttribute(cab)
         let getIl = gb.GetILGenerator()
-        getIl.Emit(OpCodes.Ldarg_0)
-        getIl.Emit(OpCodes.Ldfld, fb)
+        getIl.Emit(OpCodes.Ldsfld, fb)
         getIl.Emit(OpCodes.Ret)
+        gb
+    let emitSet (fb:FieldBuilder) name  =
+        let sb = typeBuilder.DefineMethod(sprintf "set_%s" name, getSetAttr, null, [|typeof<Primitive>|])
+        sb.SetCustomAttribute(cab)
         let setIl = sb.GetILGenerator()
         setIl.Emit(OpCodes.Ldarg_0);
-        setIl.Emit(OpCodes.Ldarg_1);
-        setIl.Emit(OpCodes.Stfld, fb);
+        setIl.Emit(OpCodes.Stsfld, fb);
         setIl.Emit(OpCodes.Ret);
-        pb.SetGetMethod(gb)
+        sb
+    let generateProperty name = 
+        let pb = typeBuilder.DefineProperty(name, PropertyAttributes.HasDefault, typeof<Primitive>, null)
+        let fb = typeBuilder.DefineField(sprintf "<%s>k_BackingField" name, typeof<Primitive>, FieldAttributes.Private ||| FieldAttributes.Static)
+        fb.SetCustomAttribute(cab)
+        let gb = emitGet fb name 
+        let sb = emitSet fb name 
         pb.SetSetMethod(sb)
-        //pb
+        pb.SetGetMethod(gb)
         {propBuilder=pb;fieldBuilder=fb;getBuilder=gb;setBuilder=sb}
     [for instruction in instructions do
         match instruction with
@@ -128,13 +197,16 @@ let emitInstructions (mainIL:ILGenerator) doc
         (methods:IDictionary<Identifier,MethodBuilder*string list>)
         (fields:IDictionary<Identifier,FieldBuilder>)
         //(properties:IDictionary<Identifier,PropertyBuilder>)
-        (properties:IDictionary<Identifier,PropertyBuilders>)
+        (properties:IDictionary<Identifier,PropBuilder>)
         (program:(Position*Instruction) array) =
     let fieldLookup name = fields.[name]
     /// IL generator for current method
     let methodIL = ref mainIL
     /// Name of current method
     let methodName = ref "Main"
+    let propBuilder:PropBuilder option ref = ref None
+
+    let propName:string option ref= ref None
     /// For for and while statements
     let loopStack = Stack<Label*Label>()
     /// For if statements
@@ -152,6 +224,17 @@ let emitInstructions (mainIL:ILGenerator) doc
             labels.Add(name,label)
             label
     let getLibraryTypeName name = sprintf "Microsoft.SmallBasic.Library.%s, SmallBasicLibrary" name
+
+    let emitInt (il:ILGenerator) (op:OpCode) =
+        il.Emit(op)
+        il.EmitNewPrimitive typeof<int>
+    let emitNewPrimitive (il:ILGenerator) t =
+        let ci = typeof<Primitive>.GetConstructor([|t|])
+        il.Emit(OpCodes.Newobj,ci)
+
+    let mathOps = [Pow,"Power";Mod,"Mod"]
+
+    
     /// Emit new Primitive(bool|int|float|string).
     let emitLiteral (il:ILGenerator) = function
         | Bool(true) -> 
@@ -160,6 +243,15 @@ let emitInstructions (mainIL:ILGenerator) doc
         | Bool(false) -> 
             il.Emit(OpCodes.Ldc_I4_0) // pushes the value of 0 onto the evaluation stack as an int32
             il.EmitNewPrimitive typeof<bool>
+        | Int -1 -> emitInt il OpCodes.Ldc_I4_M1
+        | Int 0  -> emitInt il OpCodes.Ldc_I4_0
+        | Int 1  -> emitInt il OpCodes.Ldc_I4_1
+        | Int 2  -> emitInt il OpCodes.Ldc_I4_2
+        | Int 3  -> emitInt il OpCodes.Ldc_I4_3
+        | Int 4  -> emitInt il OpCodes.Ldc_I4_4
+        | Int 5  -> emitInt il OpCodes.Ldc_I4_5
+        | Int 6  -> emitInt il OpCodes.Ldc_I4_6
+        | Int 7  -> emitInt il OpCodes.Ldc_I4_7
         | Int i ->  
             il.Emit(OpCodes.Ldc_I4,i)
             il.EmitNewPrimitive typeof<int>
@@ -178,6 +270,7 @@ let emitInstructions (mainIL:ILGenerator) doc
         | Array _ -> raise <| NotImplementedException()
     /// Emit new SmallBasicCallback(null, method specified) 1) load null 2) pointer to method w/ specified name 3) Create new SmallBasicCall(object,IntPtr)
     let emitNewCallback (il:ILGenerator) name =
+        
         il.Emit(OpCodes.Ldnull) 
         il.Emit(OpCodes.Ldftn, fst methods.[name])//:>MethodInfo) //pushes an unmanged pointer to the native code, implementing a method on the the stack
         let cb = typeof<SmallBasicCallback>
@@ -192,10 +285,8 @@ let emitInstructions (mainIL:ILGenerator) doc
         | x -> il.Emit(OpCodes.Ldarg,x)
     /// Emit expression
     let rec emitExpression (il:ILGenerator) = function
-        | Literal x -> 
-            emitLiteral il x
+        | Literal x -> emitLiteral il x
         | Var name -> 
-            //emitPrint il <| sprintf "Emitting Var(%s)" name
             let paramIndex =
                 match methods.TryGetValue(!methodName) with
                 | true, (_,ps) -> ps |> List.tryFindIndex ((=) name)
@@ -205,7 +296,10 @@ let emitInstructions (mainIL:ILGenerator) doc
             | None -> 
                 match fields.TryGetValue(name) with
                 | true, field -> il.Emit(OpCodes.Ldsfld,field)
-                | false, _ -> emitNewCallback il name
+                | false, _ -> 
+                    match properties.TryGetValue(name) with
+                    | true,pb -> il.Emit(OpCodes.Call,pb.GetBuilder)
+                    | _ -> emitNewCallback il name
         | GetAt(Location(name,indices)) ->
             let emitGetArrayValue (index:Expr) = emitPrimitiveCall il index "GetArrayValue" 
             //emitExpression il index; let mi = typeof<Primitive>.GetMethod("GetArrayValue"); il.EmitCall(OpCodes.Call,mi,null)
@@ -224,6 +318,8 @@ let emitInstructions (mainIL:ILGenerator) doc
         | Arithmetic(lhs,Subtract,rhs) -> emitOp il lhs rhs "op_Subtraction"
         | Arithmetic(lhs,Multiply,rhs) -> emitOp il lhs rhs "op_Multiply"
         | Arithmetic(lhs,Divide,rhs) -> emitOp il lhs rhs "op_Division"
+        | Arithmetic(lhs,Pow,rhs) -> emitMath il lhs rhs "Power"
+        | Arithmetic(lhs,Mod,rhs) -> emitMath il lhs rhs "Remainder"
         | Comparison(lhs,op,rhs) -> op |> toOp |> emitOp il lhs rhs
         | Logical(lhs,And,rhs) -> emitOp il lhs rhs "op_And"
         | Logical(lhs,Or,rhs) -> emitOp il lhs rhs "op_Or"
@@ -246,6 +342,11 @@ let emitInstructions (mainIL:ILGenerator) doc
             il.Emit(OpCodes.Stloc, array.LocalIndex)
             )
         il.Emit(OpCodes.Ldloc, array.LocalIndex)
+    and emitMath (il:ILGenerator) lhs rhs (methodName:string) =
+        emitExpression il lhs
+        emitExpression il rhs
+        let mi = typeof<Microsoft.SmallBasic.Library.Math>.GetMethod(methodName)
+        il.EmitCall(OpCodes.Call,mi,[|typeof<Primitive>;typeof<Primitive>|])
     and emitPrint (il:ILGenerator) s =
         let args = [Literal(AST.String(s))]
         emitArgs il args
@@ -258,6 +359,14 @@ let emitInstructions (mainIL:ILGenerator) doc
         emitExpression il expr
         let mi = typeof<Primitive>.GetMethod(name)
         il.EmitCall(OpCodes.Call,mi,null)
+    and emitPow (il:ILGenerator) lhs rhs =
+        emitExpression il lhs
+        //il.Emit(OpCodes.Stloc_0)
+        emitExpression il rhs
+        let mi = typeof<Microsoft.SmallBasic.Library.Math>.GetMethod("Power")
+        il.EmitCall(OpCodes.Call,mi,[|typeof<Primitive>;typeof<Primitive>|])
+        //il.Emit(OpCodes.Stloc_1)
+        
     /// Get (Primitive.)method name for given op
     and toOp = function
         | Eq -> "op_Equality" | Ne -> "op_Inequality"
@@ -329,10 +438,13 @@ let emitInstructions (mainIL:ILGenerator) doc
     let emitProperty (il:ILGenerator) name expr =
         match properties.TryGetValue(name) with
         | true, pb -> //{propBuilder=pb;fieldBuilder=fb;getBuilder=gb;setBuilder=sb} -> 
-            //todo: this breaks the program, something to do with the emit/invoke being invalid.
+            il.Emit(OpCodes.Nop)
+            //il.Emit(OpCodes.Ldc_I4_0)
+            //let ci = typeof<Primitive>.GetConstructor([|typeof<int>|])
+            //il.Emit(OpCodes.Newobj,ci)
             emitExpression il expr
-            let setMi = pb.propBuilder.GetSetMethod()
-            il.EmitCall(OpCodes.Call,setMi,null)
+            il.EmitCall(OpCodes.Call,pb.PropBuilder.GetSetMethod(),null)
+            il.Emit(OpCodes.Nop)
         | false, _ -> failwithf "Could not find property %s" name
 
     /// Emits the IL for a given instruction
@@ -530,13 +642,30 @@ let emitInstructions (mainIL:ILGenerator) doc
             methodIL := mainIL
         | Field(name,e) ->
                 emitProperty il name e
-        | StartField name -> notimpl()
-            //let builders = properties.[name]
-            //methodName := sprintf "init_%s" name
-            //methodIL := builders.initBuilder.GetILGenerator()
-        | EndField -> notimpl()
-            //il.Emit
-            //()
+        | FieldValue expr -> 
+            match !propBuilder with
+            | None -> failwith "No propBuilder was set when EndField encountered. Possibly EndField mismatch"
+            | Some pb ->
+                emitExpression il expr
+                il.Emit(OpCodes.Stsfld,pb.FieldBuilder)
+                //il.Emit(OpCodes.Ret)
+        | StartField name -> 
+            //this is probably wrong
+            let builder = properties.[name]
+            propBuilder := Some builder
+            methodName := builder.GetName
+            methodIL := builder.GetBuilder.GetILGenerator()
+        | EndField -> 
+            match !propBuilder with
+            | None -> failwith "No propBuilder was set when EndField encountered. Possibly EndField mismatch"
+            | Some pb ->
+                pb.SetGetSetMethods()
+                il.Emit(OpCodes.Ldsfld,pb.FieldBuilder)
+                il.Emit(OpCodes.Ret)
+            propBuilder := None
+            methodName := "Main"
+            methodIL := mainIL
+
 
 
     for (pos,instruction) in program do
@@ -562,7 +691,7 @@ let compileTo name program =
     let fields = generateFields typeBuilder instructions
     /// Methods representing program's subroutine
     let methods = generateMethods typeBuilder instructions
-    let properties = generateProperties typeBuilder instructions
+    let properties = generateProps typeBuilder instructions
     /// Main method representing main routine
     let mainBuilder =
         typeBuilder.DefineMethod( 

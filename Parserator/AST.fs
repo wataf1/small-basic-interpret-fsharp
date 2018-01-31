@@ -79,6 +79,7 @@ type Instruction =
     | Field of Identifier*Expr
     | StartField of Identifier
     | EndField
+    | FieldValue of Expr
 
     
 type Position = {

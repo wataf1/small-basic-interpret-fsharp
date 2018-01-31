@@ -9,12 +9,15 @@ let main argv =
     if not (File.Exists(path)) then
         printfn "File does not exist"
         exit 0
-    try
-        let source = File.ReadAllText(path)
-        let program = Parser.parse source
-        let exe = Path.GetFileNameWithoutExtension(path)
-        Compiler.compileTo exe program
-    with e ->
-        printfn "%s" e.Message 
-        Console.ReadLine()|> ignore
+    try 
+        try
+            let source = File.ReadAllText(path)
+            let program = Parser.parse source
+            let exe = Path.GetFileNameWithoutExtension(path)
+            Compiler.compileTo exe program
+            printfn "Completed compiling all %i lines" program.Length
+        with e ->
+            printfn "%s" e.Message 
+    finally
+        Console.ReadLine()|> ignore 
     0 // return an integer exit code

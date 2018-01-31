@@ -9,6 +9,8 @@ Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Parserator", "Parserator\Pa
 EndProject
 Project("{F2A71F9B-5D33-465A-A702-920D77279786}") = "Provider", "Provider\Provider.fsproj", "{2B0B043B-10AB-410F-915B-70FCA37B3BA6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Example", "Example\Example.csproj", "{753BD409-1823-4668-9784-C875BE5AC468}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -25,6 +27,10 @@ Global
 		{2B0B043B-10AB-410F-915B-70FCA37B3BA6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{2B0B043B-10AB-410F-915B-70FCA37B3BA6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{2B0B043B-10AB-410F-915B-70FCA37B3BA6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{753BD409-1823-4668-9784-C875BE5AC468}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{753BD409-1823-4668-9784-C875BE5AC468}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{753BD409-1823-4668-9784-C875BE5AC468}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{753BD409-1823-4668-9784-C875BE5AC468}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

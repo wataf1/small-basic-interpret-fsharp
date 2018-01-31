@@ -215,6 +215,9 @@ let pfield =
 let pstartfield = (str_ws1 "Field") >>. pid_ws |>> StartField
 let pendfield = str_ws_return "EndField" EndField
 
+let pfieldvalue =
+    (str_ws "Value") >>. (str_ws "=") >>. pexpr |>> FieldValue
+
 //let pfield = pfieldln <|>% 
 
 let pinstruct =
@@ -225,7 +228,7 @@ let pinstruct =
         pselect; pcase; pendselect;
         psub; pendsub
         pfunction; pendfunction
-        pfield; pstartfield; pendfield
+        pfield; pstartfield; pendfield; pfieldvalue
         ppropertyset; passign; psetat; pdeconstruct
         paction
         plabel; pgoto
